@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from ImageProcessor import ImgProcessor
+
 class AppInterface:
     def __init__(self,master,originImage,parentWindow):
         self.imgProcessor=ImgProcessor()
@@ -74,34 +75,62 @@ class AppInterface:
         
         child_window.title('线性处理窗口')
         child_window.geometry('800x800')
-        linear_window=AppInterface(child_window,self.changedImage,self)
+        linear_window=LinearWindow(child_window,self.changedImage,self)
         linear_window.init_mainWindow()
-        self.init_linearProcess_window(linear_window)
+        linear_window.init_histogram()
+    #     self.init_linearProcess_window(linear_window)
         
-    def init_linearProcess_window(self,childWindow):
-        if childWindow.originImage is None:
-            print("is null")
-            return
-        #创建 matplotlib图形
-        childWindow.fig=Figure(figsize=(6,4),dpi=100)
+    # def init_linearProcess_window(self,childWindow):
+    #     if childWindow.originImage is None:
+    #         print("is null")
+    #         return
+    #     #创建 matplotlib图形
+    #     childWindow.fig=Figure(figsize=(6,4),dpi=100)
         
-        childWindow.ax1.imshow(childWindow.originImage)
-        originImage_arr:np.ndarray=self.imgProcessor.getArray(childWindow.originImage)
-        self.ax2.hist(originImage_arr.ravel(),bins=256)
-        self.ax2.set_title('Histogram')
+    #     childWindow.ax1.imshow(childWindow.originImage)
+    #     originImage_arr:np.ndarray=self.imgProcessor.getArray(childWindow.originImage)
+    #     self.ax2.hist(originImage_arr.ravel(),bins=256)
+    #     self.ax2.set_title('Histogram')
         
-        #将matplotlib放入tinker里面
-        childWindow.canvas=FigureCanvasTkAgg(childWindow.fig,master=childWindow.master)
+    #     #将matplotlib放入tinker里面
+    #     childWindow.canvas=FigureCanvasTkAgg(childWindow.fig,master=childWindow.master)
         
-        childWindow.canvas.get_tk_widget().pack(side=tk.TOP,fill=tk.BOTH,expand=True)
-        childWindow.canvas=FigureCanvasTkAgg(childWindow.fig,master=childWindow.master)
-        childWindow.canvas.draw()
+    #     childWindow.canvas.get_tk_widget().pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+    #     childWindow.canvas=FigureCanvasTkAgg(childWindow.fig,master=childWindow.master)
+    #     childWindow.canvas.draw()
     def update_histogram(self,val):
         if self.originImage is None:
             return
         self.imgProcessor.getArray(self.originImage)
         #待补充
-                
+
+
+#线性变换调整窗口
+class LinearWindow(AppInterface):
+    def __init__(self, master, originImage, parentWindow):
+        super().__init__(master, originImage, parentWindow)
+    
+    
+    def init_mainWindow(self):
+        if self.originImage is None:
+            return
+        #创建 matplotlib图形
+        self.fig=Figure(figsize=(6,4),dpi=100)
+        self.ax1=self.fig.add_subplot(2,1,1)
+        
+        self.ax2=self.fig.add_subplot(2,1,2)
+        
+        #将matplotlib放入tinker里面
+        self.canvas=FigureCanvasTkAgg(self.fig,master=self.master)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+        
+        #创建参数输入域
+        self.labela=tk.Label(self.master,text="请输入斜率")
+        self.labela.pack(side=tk.LEFT,pady=10)
+        self.paraA=tk.Entry(self.master,textvariable='a',width=20)
+        self.paraA.pack(side=tk.LEFT,pady=10)
+
 if __name__=='__main__':
         root=tk.Tk()
         app=AppInterface(root,None,None)
