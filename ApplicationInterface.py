@@ -130,7 +130,27 @@ class LinearWindow(AppInterface):
         self.labela.pack(side=tk.LEFT,pady=10)
         self.paraA=tk.Entry(self.master,textvariable='a',width=20)
         self.paraA.pack(side=tk.LEFT,pady=10)
-
+        
+        self.labelb=tk.Label(self.master,text="请输入截距")
+        self.labelb.pack(side=tk.LEFT,pady=10)
+        self.paraB=tk.Entry(self.master,textvariable='b',width=20)
+        self.paraB.pack(side=tk.LEFT,pady=10)
+        #创建应用处理按钮
+        self.change_button=tk.Button(self.master,text="应用变换",command=self.applyChange)
+        self.change_button.pack(side=tk.LEFT,padx=10,pady=10)
+        
+    def applyChange(self):
+        a=float(self.paraA.get())
+        b=float(self.paraB.get())
+        new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
+        new_array=self.imgProcessor.linearChange(a,b,new_array)
+        self.changedImage=Image.fromarray(new_array)
+        self.ax1.clear()
+        self.ax1.imshow(self.changedImage)
+        self.ax2.clear()
+        self.ax2.hist(new_array.ravel(),bins=256)
+        self.canvas.draw()
+        self.master.update()
 if __name__=='__main__':
         root=tk.Tk()
         app=AppInterface(root,None,None)
