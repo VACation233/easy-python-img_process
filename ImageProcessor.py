@@ -27,3 +27,8 @@ class ImgProcessor:
         img_eq=ImageOps.equalize(img)
         
         return self.getArray(img_eq)
+    
+    def Get_Fourie_arr(self,img):
+        f=np.fft.fft2(img)
+        fshift=np.fft.fftshift(f)
+        return 20*np.log(np.abs(fshift))
