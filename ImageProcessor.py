@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from PIL import Image,ImageTk
+from PIL import Image,ImageTk,ImageOps
+
 class ImgProcessor:
     #def __init__(self):
         
@@ -11,12 +12,18 @@ class ImgProcessor:
         b=0
         img_array = self.getArray(img)
         # new_img_array = np.clip(a * img_array + b, 0, 255).astype(np.uint8)
-        new_img_array = self.linearChange(a,b,img_array)
+        new_img_array = self.Get_linearChange_arr(a,b,img_array)
         return Image.fromarray(new_img_array)
         
     
     def getArray(self,img)->np.ndarray:
         return np.array(img)
     
-    def linearChange(self,a,b,img_array):
+    def Get_linearChange_arr(self,a,b,img_array):
         return np.clip(a * img_array + b, 0, 255).astype(np.uint8)
+    
+    def Get_equlizedChange_arr(self,img):
+        #传入参数要求是Img图片
+        img_eq=ImageOps.equalize(img)
+        
+        return self.getArray(img_eq)
