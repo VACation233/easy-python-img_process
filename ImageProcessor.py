@@ -4,6 +4,11 @@ from PIL import Image,ImageTk,ImageOps
 
 class ImgProcessor:
     #def __init__(self):
+    def change_To_Gray(self,img):
+        img=img.convert('L')
+        
+        
+        return img
         
     def init_img(self,img):
         if img is None:
@@ -13,6 +18,7 @@ class ImgProcessor:
         img_array = self.getArray(img)
         # new_img_array = np.clip(a * img_array + b, 0, 255).astype(np.uint8)
         new_img_array = self.Get_linearChange_arr(a,b,img_array)
+        
         return Image.fromarray(new_img_array)
         
     

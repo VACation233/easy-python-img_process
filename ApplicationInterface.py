@@ -6,12 +6,15 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from ImageProcessor import ImgProcessor
+import os
+import copy
 
 class AppInterface:
     def __init__(self,master,originImage,parentWindow):
+        
         self.imgProcessor=ImgProcessor()
         self.master=master
-        self.master.geometry('800x600')
+        self.master.geometry('1000x600')
         self.master.title("Histogram and Linear change")
         self.originImage=originImage
         self.changedImage=None
@@ -69,16 +72,56 @@ class AppInterface:
         self.ax2.set_title('Histogram')
         self.canvas.draw()
             
-
-            
+    def saveImg(self,title):
+        if self.changedImage is None:
+            return
+        filePath=filedialog.askdirectory()
+        if filePath is None:
+            return
+        # image_format=self.changedImage.format
+        # if image_format=='JPEG':
+        #     file_extension='.jpg'
+        # elif image_format=='PNG':
+        #     file_extension='.png'
+        # else:
+        #     file_extension='.'+image_format.lower()
+        
+        savePath=os.path.join(os.path.abspath(filePath),title+'_changed_img.jpg')
+        self.changedImage.save(savePath)
+        
+    def change_To_Gray(self):
+        if self.changedImage is None:
+            return
+        
+        self.changedImage=self.imgProcessor.change_To_Gray(self.changedImage)
+        new_array=self.imgProcessor.getArray(self.changedImage)
+        self.ax1.clear()
+        self.ax1.imshow(self.changedImage,cmap='gray')
+        self.ax2.clear()
+        self.ax2.hist(new_array.ravel(),bins=256)
+        self.canvas.draw()
+        self.master.update()
+    def saveChanges(self):
+        if self.changedImage is None:
+            return
+        self.originImage=self.changedImage
+        
+    def update_origin_image(self,newImage) :
+        self.originImage=newImage
+        self.init_histogram()
+    def update_parentwindow(self):
+        if self.parentWindow is None:
+            return
+        self.parentWindow.update_origin_image(self.changedImage)
     def create_linearProcess_window(self):
         if self.originImage is None:
             return
-        self.changedImage=self.imgProcessor.init_img(self.originImage)
+        #self.changedImage=self.imgProcessor.init_img(self.originImage)
+        self.changedImage=self.originImage
         child_window=tk.Toplevel(self.master)
         
         child_window.title('线性处理窗口')
-        child_window.geometry('800x800')
+        child_window.geometry('1000x800')
         linear_window=LinearWindow(child_window,self.changedImage,self)
         linear_window.init_mainWindow()
         linear_window.init_histogram()
@@ -133,7 +176,7 @@ class LinearWindow(AppInterface):
         if self.originImage is None:
             return
         #创建 matplotlib图形
-        self.fig=Figure(figsize=(6,4),dpi=100)
+        self.fig=Figure(figsize=(8,4),dpi=100)
         self.ax1=self.fig.add_subplot(2,1,1)
         
         self.ax2=self.fig.add_subplot(2,1,2)
@@ -146,12 +189,12 @@ class LinearWindow(AppInterface):
         #创建参数输入域
         self.labela=tk.Label(self.master,text="请输入斜率")
         self.labela.pack(side=tk.LEFT,pady=10)
-        self.paraA=tk.Entry(self.master,textvariable='a',width=20)
+        self.paraA=tk.Entry(self.master,textvariable='a',width=10)
         self.paraA.pack(side=tk.LEFT,pady=10)
         
         self.labelb=tk.Label(self.master,text="请输入截距")
         self.labelb.pack(side=tk.LEFT,pady=10)
-        self.paraB=tk.Entry(self.master,textvariable='b',width=20)
+        self.paraB=tk.Entry(self.master,textvariable='b',width=10)
         self.paraB.pack(side=tk.LEFT,pady=10)
         #创建应用处理按钮
         self.change_button=tk.Button(self.master,text="应用变换",command=self.applyChange)
@@ -167,6 +210,20 @@ class LinearWindow(AppInterface):
         self.reset_button=tk.Button(self.master,text="重置图像",command=self.resetImage)
         self.reset_button.pack(side=tk.RIGHT,padx=10,pady=10)
         
+        #创建保存图片按钮
+        self.saveImg_button=tk.Button(self.master,text="保存图片",command=lambda: self.saveImg("LinearChange"))
+        self.saveImg_button.pack(side=tk.RIGHT,padx=10,pady=10)
+        
+        #创建转化灰度图按钮
+        self.saveImg_button=tk.Button(self.master,text="变为灰度图",command=self.change_To_Gray)
+        self.saveImg_button.pack(side=tk.RIGHT,padx=10,pady=10)
+        
+        #创建一键反相
+        self.reverseButton=tk.Button(self.master,text="反相",command=self.reverseFunc)
+        self.reverseButton.pack(side=tk.RIGHT,padx=10,pady=10)
+        #创建覆盖原图按钮
+        self.covertButton=tk.Button(self.master,text="覆盖原图",command=self.update_parentwindow)
+        self.covertButton.pack(side=tk.RIGHT,padx=10,pady=10)
         
     def applyChange(self):
         a=float(self.paraA.get())
@@ -197,6 +254,18 @@ class LinearWindow(AppInterface):
         self.ax2.clear()
         origin_arr=self.imgProcessor.getArray(self.originImage)
         self.ax2.hist(origin_arr.ravel(),bins=256)
+        self.canvas.draw()
+        self.master.update()
+    def reverseFunc(self):
+        a=-1
+        b=255
+        new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
+        new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
+        self.changedImage=Image.fromarray(new_array)
+        self.ax1.clear()
+        self.ax1.imshow(self.changedImage)
+        self.ax2.clear()
+        self.ax2.hist(new_array.ravel(),bins=256)
         self.canvas.draw()
         self.master.update()
 
@@ -233,7 +302,7 @@ class FourierWindow(AppInterface):
         if self.originImage is None:
             return
         self.ax1.clear()
-        self.originImage.show()
+        # self.originImage.show()
         self.ax1.imshow(self.originImage,cmap='gray')#需要修改映射空间
         self.ax1.set_title("Changed Image")
         self.ax2.clear()
@@ -261,7 +330,7 @@ class FourierWindow(AppInterface):
         self.ax2.hist(origin_arr.ravel(),bins=256)
         self.canvas.draw()
         self.master.update()
-        
+    
         
 if __name__=='__main__':
         root=tk.Tk()
