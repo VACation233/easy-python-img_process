@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from PIL import Image,ImageTk,ImageOps
+from PIL import Image,ImageTk,ImageOps,ImageFilter
 
 class ImgProcessor:
     #def __init__(self):
@@ -38,5 +38,21 @@ class ImgProcessor:
         f=np.fft.fft2(img)
         fshift=np.fft.fftshift(f)
         return 20*np.log(np.abs(fshift))
+    
     def GetImageFromArray(self,img_array):
+        img_array = img_array.astype(np.uint8)
+
         return Image.fromarray(img_array)
+    
+    #添加噪点
+    def add_gaussian_noise(self,img,mean=0,std=1)->np.ndarray:
+        img=np.array(img)
+        noise=np.random.normal(mean,std,img.shape)#可能会失效
+        noisy_img_array=img+noise
+        noisy_img_array=np.clip(noisy_img_array,0,255)
+        return noisy_img_array
+    #添加模糊
+    def add_motion(self,img,radius=0):
+        img = img.filter(ImageFilter.GaussianBlur(radius=5))
+        new_array=self.getArray(img)
+        return new_array
