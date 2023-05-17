@@ -56,3 +56,19 @@ class ImgProcessor:
         img = img.filter(ImageFilter.GaussianBlur(radius=5))
         new_array=self.getArray(img)
         return new_array
+    
+    def hight_pass_filter(self,img,factor=0):
+        kernel = np.array([[0, -1, 0], [-1, 4 + factor, -1], [0, -1, 0]])
+        array=self.getArray(img)
+        img = cv2.filter2D(array, -1, kernel)
+        
+        new_array=self.getArray(img)
+        return new_array
+    
+    def low_pass_filter(self,image, kernel_size=3):
+        array=self.getArray(image)
+        kernel = np.ones((kernel_size, kernel_size), np.float32) / (kernel_size ** 2)
+        filtered_image = cv2.filter2D(array, -1, kernel)
+        new_array=self.getArray(filtered_image)
+        return new_array
+

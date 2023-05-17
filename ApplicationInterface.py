@@ -48,6 +48,10 @@ class AppInterface:
         #创建脏污图片按钮
         self.dirty_button=tk.Button(self.master,text='脏污图片',command=self.create_DirtPicture_window)
         self.dirty_button.pack(side=tk.LEFT,padx=10,pady=10)
+        #创建修复图片按钮
+        self.fix_button=tk.Button(self.master,text='修复图片',command=self.create_FixPictureWindow)
+        self.fix_button.pack(side=tk.LEFT,padx=10,pady=10)
+        
         # #创建滑块
         # self.silder_label=tk.Label(self.master,text="Contrast: ")
         # self.silder_label.pack(side=tk.LEFT,padx=10,pady=10)
@@ -205,6 +209,20 @@ class AppInterface:
         dirtPicture_window=DirtyPictureWindow(child_window,changed_Img,self)
         dirtPicture_window.init_mainWindow()
         dirtPicture_window.init_histogram()
+        
+    def create_FixPictureWindow(self):
+        if self.originImage is None:
+            return
+        
+        child_window=tk.Toplevel(self.master)
+        changed_Img=self.originImage
+        
+        
+        child_window.title('修复图片')
+        
+        fixPicture_window=FixPictureWindow(child_window,changed_Img,self)
+        fixPicture_window.init_mainWindow()
+        fixPicture_window.init_histogram()
 
 #线性变换调整窗口
 class LinearWindow(AppInterface):
@@ -466,7 +484,89 @@ class DirtyPictureWindow(AppInterface):
         self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
         self.updateFig(new_array,self.changedImage)
         
+    
+class FixPictureWindow(AppInterface):
+    def __init__(self, master, originImage, parentWindow):
+        super().__init__(master, originImage, parentWindow)
+        self.changedImage=self.originImage
         
+    def init_mainWindow(self):
+        if self.originImage is None:
+            return
+        #创建 matplotlib图形
+        self.fig=Figure(figsize=(8,4),dpi=100)
+        self.ax1=self.fig.add_subplot(2,1,1)
+        
+        self.ax2=self.fig.add_subplot(2,1,2)
+        
+        #将matplotlib放入tinker里面
+        self.canvas=FigureCanvasTkAgg(self.fig,master=self.master)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+        
+        #创建高通滤波通道参数输入 锐化
+        #创建参数输入域
+        self.labela=tk.Label(self.master,text="请输入锐化因子")
+        self.labela.pack(side=tk.LEFT,pady=10)
+        self.paraA=tk.Entry(self.master,width=10)
+        self.paraA.pack(side=tk.LEFT,pady=10)
+        #应用按钮
+        self.apply_sharpen_button=tk.Button(self.master,text="应用高通效果",command=self.sharpen_Img)
+        self.apply_sharpen_button.pack(side=tk.LEFT,padx=10,pady=10)
+
+        #创建低通滤波通道参数输入 模糊
+        #创建参数输入域
+        self.labela=tk.Label(self.master,text="请输入内核大小")
+        self.labela.pack(side=tk.LEFT,pady=10)
+        self.paraB=tk.Entry(self.master,width=10)
+        self.paraB.pack(side=tk.LEFT,pady=10)
+        
+        #应用按钮
+        self.apply_motion_button=tk.Button(self.master,text="应用低通效果",command=self.motion_Img)
+        self.apply_motion_button.pack(side=tk.LEFT,padx=10,pady=10)
+        
+        #创建保存图片按钮
+        self.saveImg_button=tk.Button(self.master,text="保存图片",command=lambda: self.saveImg("FixChange"))
+        self.saveImg_button.pack(side=tk.RIGHT,padx=10,pady=10)
+        #创建转化灰度图按钮
+        self.saveImg_button=tk.Button(self.master,text="变为灰度图",command=self.change_To_Gray)
+        self.saveImg_button.pack(side=tk.RIGHT,padx=10,pady=10)
+        
+        #创建覆盖原图按钮
+        self.covertButton=tk.Button(self.master,text="覆盖原图",command=self.update_parentwindow)
+        self.covertButton.pack(side=tk.RIGHT,padx=10,pady=10)
+        
+        #创建保存变换按钮
+        self.saveChange_button=tk.Button(self.master,text="保存变动",command=self.saveChanges)
+        self.saveChange_button.pack(side=tk.RIGHT,padx=10,pady=10)
+        
+        #创建重置按钮
+        self.reset_button=tk.Button(self.master,text="重置图像",command=self.resetImage)
+        self.reset_button.pack(side=tk.RIGHT,padx=10,pady=10)
+    
+    def sharpen_Img(self):
+        if self.changedImage is None:
+            return
+        if not self.paraA.get():
+            factor=0
+        else:
+            factor=float(self.paraA.get())
+        
+        new_array=self.imgProcessor.hight_pass_filter(self.changedImage,factor)
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+        self.updateFig(new_array,self.changedImage)
+        
+    def motion_Img(self):
+        if self.changedImage is None:
+            return
+        if not self.paraB.get():
+            core_size=3
+        else:
+            core_size=int(self.paraB.get())
+        new_array=self.imgProcessor.low_pass_filter(self.changedImage,core_size)
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+        self.updateFig(new_array,self.changedImage)
+    
 if __name__=='__main__':
         root=tk.Tk()
         app=AppInterface(root,None,None)
