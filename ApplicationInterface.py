@@ -14,12 +14,13 @@ class AppInterface:
         
         self.imgProcessor=ImgProcessor()
         self.master=master
-        self.master.geometry('1000x600')
+        self.master.geometry('1200x600')
         self.master.title("Histogram and Linear change")
         self.originImage=originImage
         self.changedImage=None
         self.parentWindow=parentWindow
-        
+        self.isGray=False
+        self.convertCount=0
         
         
         
@@ -63,7 +64,10 @@ class AppInterface:
         if self.originImage is None:
             return
         self.ax1.clear()
-        self.ax1.imshow(self.originImage)
+        if self.isGray:
+            self.ax1.imshow(self.originImage,cmap='gray')
+        else:
+            self.ax1.imshow(self.originImage)
         self.ax1.set_title("Changed Image")
         self.ax2.clear()
         #直接声明类型
@@ -92,7 +96,7 @@ class AppInterface:
     def change_To_Gray(self):
         if self.changedImage is None:
             return
-        
+        self.isGray=True
         self.changedImage=self.imgProcessor.change_To_Gray(self.changedImage)
         new_array=self.imgProcessor.getArray(self.changedImage)
         self.ax1.clear()
@@ -105,14 +109,16 @@ class AppInterface:
         if self.changedImage is None:
             return
         self.originImage=self.changedImage
+        self.convertCount=self.convertCount+1
         
-    def update_origin_image(self,newImage) :
+    def update_origin_image(self,newImage,isGray) :
         self.originImage=newImage
+        self.isGray=isGray
         self.init_histogram()
     def update_parentwindow(self):
         if self.parentWindow is None:
             return
-        self.parentWindow.update_origin_image(self.changedImage)
+        self.parentWindow.update_origin_image(self.changedImage,self.isGray)
     def create_linearProcess_window(self):
         if self.originImage is None:
             return
@@ -171,7 +177,12 @@ class LinearWindow(AppInterface):
     def __init__(self, master, originImage, parentWindow):
         super().__init__(master, originImage, parentWindow)
         self.changedImage=self.originImage
-        
+        self.contrastMaxLimit=2
+        self.contrastMinLimit=0
+        self.currentContrast=1
+        self.lightMaxLimit=128
+        self.lightMinLimit=-128
+
     def init_mainWindow(self):
         if self.originImage is None:
             return
@@ -205,7 +216,9 @@ class LinearWindow(AppInterface):
         #创建直方图均衡化按钮
         self.equalized_button=tk.Button(self.master,text="均衡化",command=self.equlizedChange)
         self.equalized_button.pack(side=tk.LEFT,padx=10,pady=10)
-        
+        #创建保存变换按钮
+        self.saveChange_button=tk.Button(self.master,text="保存变动",command=self.saveChanges)
+        self.saveChange_button.pack(side=tk.RIGHT,padx=10,pady=10)
         #创建重置按钮
         self.reset_button=tk.Button(self.master,text="重置图像",command=self.resetImage)
         self.reset_button.pack(side=tk.RIGHT,padx=10,pady=10)
@@ -224,15 +237,24 @@ class LinearWindow(AppInterface):
         #创建覆盖原图按钮
         self.covertButton=tk.Button(self.master,text="覆盖原图",command=self.update_parentwindow)
         self.covertButton.pack(side=tk.RIGHT,padx=10,pady=10)
+        #创建增加对比度
+        self.increase_contrast_Button=tk.Button(self.master,text="增加对比度",command=self.IncreaseContrast)
+        self.increase_contrast_Button.pack(side=tk.RIGHT,padx=10,pady=10)
+        #创建减小对比度
+        self.decrease_contrast_Button=tk.Button(self.master,text="减小对比度",command=self.DecreaseContrast)
+        self.decrease_contrast_Button.pack(side=tk.RIGHT,padx=10,pady=10)
         
     def applyChange(self):
         a=float(self.paraA.get())
         b=float(self.paraB.get())
-        new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
+        new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
         new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
         self.changedImage=Image.fromarray(new_array)
         self.ax1.clear()
-        self.ax1.imshow(self.changedImage)
+        if self.isGray:
+            self.ax1.imshow(self.changedImage,cmap='gray')
+        else:
+            self.ax1.imshow(self.changedImage)
         self.ax2.clear()
         self.ax2.hist(new_array.ravel(),bins=256)
         self.canvas.draw()
@@ -249,8 +271,16 @@ class LinearWindow(AppInterface):
         self.canvas.draw()
         self.master.update()
     def resetImage(self):
+        if len(self.originImage.getbands())==1:
+            self.isGray=True
+        else:
+            self.isGray=False
+        self.changedImage=self.originImage
         self.ax1.clear()
-        self.ax1.imshow(self.originImage)
+        if self.isGray:
+            self.ax1.imshow(self.originImage,cmap='gray')
+        else:
+            self.ax1.imshow(self.originImage)
         self.ax2.clear()
         origin_arr=self.imgProcessor.getArray(self.originImage)
         self.ax2.hist(origin_arr.ravel(),bins=256)
@@ -259,16 +289,50 @@ class LinearWindow(AppInterface):
     def reverseFunc(self):
         a=-1
         b=255
-        new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
+        new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
         new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
         self.changedImage=Image.fromarray(new_array)
         self.ax1.clear()
-        self.ax1.imshow(self.changedImage)
+        if self.isGray:
+            self.ax1.imshow(self.changedImage,cmap='gray')
+        else:
+            self.ax1.imshow(self.changedImage)
         self.ax2.clear()
         self.ax2.hist(new_array.ravel(),bins=256)
         self.canvas.draw()
         self.master.update()
-
+    def IncreaseContrast(self):
+        a=1.5
+        b=-128
+        new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
+        new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
+        self.changedImage=Image.fromarray(new_array)
+        self.ax1.clear()
+        if self.isGray:
+            self.ax1.imshow(self.changedImage,cmap='gray')
+        else:
+            self.ax1.imshow(self.changedImage)
+        self.ax2.clear()
+        self.ax2.hist(new_array.ravel(),bins=256)
+        self.canvas.draw()
+        self.master.update()
+        
+    def DecreaseContrast(self):
+        a=0.5
+        b=128
+        new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
+        new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
+        self.changedImage=Image.fromarray(new_array)
+        self.ax1.clear()
+        if self.isGray:
+            self.ax1.imshow(self.changedImage,cmap='gray')
+        else:
+            self.ax1.imshow(self.changedImage)
+        self.ax2.clear()
+        self.ax2.hist(new_array.ravel(),bins=256)
+        self.canvas.draw()
+        self.master.update()
+        
 #傅里叶变换调整窗口
 class FourierWindow(AppInterface):
     def __init__(self, master, originImage, parentWindow):
