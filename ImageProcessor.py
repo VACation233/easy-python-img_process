@@ -38,3 +38,5 @@ class ImgProcessor:
         f=np.fft.fft2(img)
         fshift=np.fft.fftshift(f)
         return 20*np.log(np.abs(fshift))
+    def GetImageFromArray(self,img_array):
+        return Image.fromarray(img_array)

@@ -75,7 +75,18 @@ class AppInterface:
         self.ax2.hist(originImage_arr.ravel(),bins=256)
         self.ax2.set_title('Histogram')
         self.canvas.draw()
-            
+        
+    def updateFig(self,img_array,img):
+        self.ax1.clear()
+        if self.isGray:
+            self.ax1.imshow(img,cmap='gray')
+        else:
+            self.ax1.imshow(img)
+        self.ax2.clear()
+        self.ax2.hist(img_array.ravel(),bins=256)
+        self.canvas.draw()
+        self.master.update()
+        
     def saveImg(self,title):
         if self.changedImage is None:
             return
@@ -99,12 +110,8 @@ class AppInterface:
         self.isGray=True
         self.changedImage=self.imgProcessor.change_To_Gray(self.changedImage)
         new_array=self.imgProcessor.getArray(self.changedImage)
-        self.ax1.clear()
-        self.ax1.imshow(self.changedImage,cmap='gray')
-        self.ax2.clear()
-        self.ax2.hist(new_array.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        
+        self.updateFig(new_array,self.changedImage)
     def saveChanges(self):
         if self.changedImage is None:
             return
@@ -249,89 +256,48 @@ class LinearWindow(AppInterface):
         b=float(self.paraB.get())
         new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
         new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
-        self.changedImage=Image.fromarray(new_array)
-        self.ax1.clear()
-        if self.isGray:
-            self.ax1.imshow(self.changedImage,cmap='gray')
-        else:
-            self.ax1.imshow(self.changedImage)
-        self.ax2.clear()
-        self.ax2.hist(new_array.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+
+        self.updateFig(new_array,self.changedImage)
+        
     def equlizedChange(self):
         # new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
         # new_array=self.imgProcessor.Get_equlizedChange_arr(new_array)
         new_array=self.imgProcessor.Get_equlizedChange_arr(self.changedImage)
-        self.changedImage=Image.fromarray(new_array)
-        self.ax1.clear()
-        self.ax1.imshow(self.changedImage)
-        self.ax2.clear()
-        self.ax2.hist(new_array.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+        self.updateFig(new_array,self.changedImage)
     def resetImage(self):
         if len(self.originImage.getbands())==1:
             self.isGray=True
         else:
             self.isGray=False
         self.changedImage=self.originImage
-        self.ax1.clear()
-        if self.isGray:
-            self.ax1.imshow(self.originImage,cmap='gray')
-        else:
-            self.ax1.imshow(self.originImage)
-        self.ax2.clear()
-        origin_arr=self.imgProcessor.getArray(self.originImage)
-        self.ax2.hist(origin_arr.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
+        self.updateFig(new_array,self.changedImage)
     def reverseFunc(self):
         a=-1
         b=255
         new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
         new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
-        self.changedImage=Image.fromarray(new_array)
-        self.ax1.clear()
-        if self.isGray:
-            self.ax1.imshow(self.changedImage,cmap='gray')
-        else:
-            self.ax1.imshow(self.changedImage)
-        self.ax2.clear()
-        self.ax2.hist(new_array.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+        self.updateFig(new_array,self.changedImage)
     def IncreaseContrast(self):
         a=1.5
         b=-128
         new_array:np.ndarray=self.imgProcessor.getArray(self.changedImage)
         new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
-        self.changedImage=Image.fromarray(new_array)
-        self.ax1.clear()
-        if self.isGray:
-            self.ax1.imshow(self.changedImage,cmap='gray')
-        else:
-            self.ax1.imshow(self.changedImage)
-        self.ax2.clear()
-        self.ax2.hist(new_array.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+        
+        self.updateFig(new_array,self.changedImage)
         
     def DecreaseContrast(self):
         a=0.5
         b=128
         new_array:np.ndarray=self.imgProcessor.getArray(self.originImage)
         new_array=self.imgProcessor.Get_linearChange_arr(a,b,new_array)
-        self.changedImage=Image.fromarray(new_array)
-        self.ax1.clear()
-        if self.isGray:
-            self.ax1.imshow(self.changedImage,cmap='gray')
-        else:
-            self.ax1.imshow(self.changedImage)
-        self.ax2.clear()
-        self.ax2.hist(new_array.ravel(),bins=256)
-        self.canvas.draw()
-        self.master.update()
+        self.changedImage=self.imgProcessor.GetImageFromArray(new_array)
+        
+        self.updateFig(new_array,self.changedImage)
         
 #傅里叶变换调整窗口
 class FourierWindow(AppInterface):
